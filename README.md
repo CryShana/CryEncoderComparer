@@ -50,7 +50,8 @@ A preset must not have any inputs (`-i`)
 
 Anything else is up to you. You can set encoder parameters however you want.
 
-
+## Screenshots
+![Screenshot of program](https://assets.cryshana.me/7TgTRF0UwJyR.png)
 ---
 
 
