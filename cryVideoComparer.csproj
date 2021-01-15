@@ -3,17 +3,15 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
+
   
-  <!--
   <PropertyGroup>
     <IlcInvariantGlobalization>true</IlcInvariantGlobalization>
     <RootAllApplicationAssemblies>false</RootAllApplicationAssemblies>
-    <IlcGenerateCompleteTypeMetadata>false</IlcGenerateCompleteTypeMetadata>
     <IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
-    <IlcDisableReflection>true</IlcDisableReflection>
     <IlcOptimizationPreference>Size</IlcOptimizationPreference>
     <IlcFoldIdenticalMethodBodies>true</IlcFoldIdenticalMethodBodies>
-  </PropertyGroup>-->
+  </PropertyGroup>
 
   <ItemGroup>
     <None Include="tools\**" CopyToOutputDirectory="PreserveNewest"/>
@@ -21,10 +19,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.ILCompiler" Version="6.0.0-*"/>
-    <PackageReference Include="CryMediaAPI" Version="1.1.2"/>
   </ItemGroup>
 
-  <ItemGroup>
-  <RdXmlFile Include="rd.xml" />
-</ItemGroup>
 </Project>

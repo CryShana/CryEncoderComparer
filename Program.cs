@@ -1,10 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
-using CryMediaAPI;
 using System.Text.Json;
 using System.Threading;
-using CryMediaAPI.Video;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -31,14 +29,13 @@ namespace cryVideoComparer
 
             try
             {
-                WriteLine("parsing");
                 // parse input
                 var (input, from, to, presets, threads) = ConsoleHelpers.ParseArguments(args);
 
                 // check if ffmpeg is accessible
                 try
                 {
-                    _ = FFmpegWrapper.GetFormats();
+                    //_ = FFmpegWrapper.GetFormats();
                 }
                 catch
                 {
@@ -92,11 +89,19 @@ namespace cryVideoComparer
             var path_vmaf = Path.Combine(tempDirectory, vmafresult);
 
             // get reference video metadata
-            var (w, h, bit, fps, chroma, pix_fmt) = await ReadVideoData(input);
+            var (w, h, bit, fps, chroma, pix_fmt, duration) = await ReadVideoData(input);
             var fromSec = ParseTimeToSeconds(from);
-            var toSec = string.IsNullOrEmpty(to) ? -1 : ParseTimeToSeconds(to);
+            var toSec = string.IsNullOrEmpty(to) ? duration : ParseTimeToSeconds(to);
             if (toSec >= 0 && toSec < fromSec) throw new Exception("TO timestamp can not be set before FROM!");
             current_duration = toSec - fromSec;
+
+            WriteLine("Loaded reference clip:");
+            ConsoleHelpers.WriteLineMultipart(("Reference:      ", ConsoleColor.Gray), (filename, ConsoleColor.Cyan));
+            ConsoleHelpers.WriteLineMultipart(("Width:          ", ConsoleColor.Gray), (w.ToString(), ConsoleColor.DarkCyan));
+            ConsoleHelpers.WriteLineMultipart(("Height:         ", ConsoleColor.Gray), (h.ToString(), ConsoleColor.DarkCyan));
+            ConsoleHelpers.WriteLineMultipart(("Pixel Format:   ", ConsoleColor.Gray), (pix_fmt, ConsoleColor.DarkCyan));
+            ConsoleHelpers.WriteLineMultipart(("Framerate:      ", ConsoleColor.Gray), (fps.ToString(), ConsoleColor.DarkCyan));
+            ConsoleHelpers.WriteLineMultipart(("Duration:       ", ConsoleColor.Gray), (duration.ToString() + "sec", ConsoleColor.DarkCyan));
 
             // start process
             Process ffmpeg = null, vmaf = null;
@@ -106,8 +111,7 @@ namespace cryVideoComparer
                 if (!File.Exists(vmafpath)) throw new FileNotFoundException("VMAF executable not found!");
 
                 // convert original to raw .yuv
-                ConsoleHelpers.WriteMultipart(("Converting '", ConsoleColor.Gray), (filename, ConsoleColor.Cyan), ("' to raw YUV format (Duration: ", ConsoleColor.Gray),
-                    ($"{current_duration}sec", ConsoleColor.Cyan), (")", ConsoleColor.Gray));
+                ConsoleHelpers.WriteMultipart(("\nConverting to raw YUV format (Duration: ", ConsoleColor.Gray), ($"{current_duration}sec", ConsoleColor.Cyan), (")", ConsoleColor.Gray));
 
                 ffmpeg = FFmpegHelpers.Run($"-i \"{input}\" -ss {fromSec} {(toSec <= 0 ? "" : $"-to {toSec}")} -an -f rawvideo {path_ref} -y", null, onProgressChanged);
                 ffmpeg.StartInfo.RedirectStandardOutput = true;
@@ -122,7 +126,7 @@ namespace cryVideoComparer
                     EnsureValidPreset(p, out string format);
 
                     // encode video normally
-                    ConsoleHelpers.WriteMultipart(("\nEncoding using '", ConsoleColor.Gray), (p, ConsoleColor.Cyan), ("'", ConsoleColor.Gray));
+                    ConsoleHelpers.WriteMultipart(("\nEncoding using '", ConsoleColor.Gray), (p, ConsoleColor.Magenta), ("'", ConsoleColor.Gray));
 
                     ffmpeg = FFmpegHelpers.Run($"-f rawvideo -framerate {fps} -pixel_format {pix_fmt} -video_size {w}x{h} -i \"{path_ref}\" {p} -an {path_enc} -y", null, onProgressChanged);
                     await ffmpeg.WaitForExitAsync(csc.Token);
@@ -199,29 +203,20 @@ namespace cryVideoComparer
             }
         }
 
-        static async Task<(int width, int height, int bitDepth, double fps, string chroma, string pixelFormat)> ReadVideoData(string input)
+        static async Task<(int width, int height, int bitDepth, double fps, string chroma, string pixelFormat, double duration)> ReadVideoData(string input)
         {
-            using (var reader = new VideoReader(input))
-            {
-                await reader.LoadMetadataAsync();
+            var (w, h, pix_fmt, fps, duration) = await FFmpegHelpers.GetMetadata(input, csc.Token);
 
-                var w = reader.Metadata.Width;
-                var h = reader.Metadata.Height;
-                var pix_fmt = reader.Metadata.PixelFormat.ToLowerInvariant().Trim();
+            var bit = 8;
+            var chroma = "420";
+            if (pix_fmt.Contains("420", StringComparison.Ordinal)) chroma = "420";
+            else if (pix_fmt.Contains("422", StringComparison.Ordinal)) chroma = "422";
+            else if (pix_fmt.Contains("444", StringComparison.Ordinal)) chroma = "444";
 
-                var bit = 8;
-                var chroma = "420";
-                if (pix_fmt.Contains("420", StringComparison.Ordinal)) chroma = "420";
-                else if (pix_fmt.Contains("422", StringComparison.Ordinal)) chroma = "422";
-                else if (pix_fmt.Contains("444", StringComparison.Ordinal)) chroma = "444";
+            if (pix_fmt.Contains("p10", StringComparison.Ordinal)) bit = 10;
+            else if (pix_fmt.Contains("p12", StringComparison.Ordinal)) bit = 12;
 
-                if (pix_fmt.Contains("p10", StringComparison.Ordinal)) bit = 10;
-                else if (pix_fmt.Contains("p12", StringComparison.Ordinal)) bit = 12;
-
-                var fps = reader.Metadata.AvgFramerate;
-
-                return (w, h, bit, fps, chroma, pix_fmt);
-            }
+            return (w, h, bit, fps, chroma, pix_fmt, duration);
         }
 
         static double ParseTimeToSeconds(string time)
