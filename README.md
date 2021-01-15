@@ -1,4 +1,4 @@
-# CryVideoComparer
+# CryEncoderComparer
 A simple cross-platform command-line tool for comparing diffent ffmpeg video encoders based on a reference video and VMAF metric. 
 
 User can define multiple presets (= ffmpeg commands) for encoding the reference video. The tool will then calculate the VMAF metric for each defined preset. 
@@ -10,7 +10,7 @@ User can define multiple presets (= ffmpeg commands) for encoding the reference 
 
 ## Usage
 ```
-Usage: ./cryVideoComparer [options] <REFERENCE CLIP> [options]
+Usage: ./CryEncoderComparer [options] <REFERENCE CLIP> [options]
 
 Options:
    --from <timestamp>      Select the FROM timestamp for reference clip. (example: 52.3)
@@ -24,12 +24,12 @@ Used reference video is `myClip.mp4`.
 
 Using timestamps `00:45.5` and `01:00` and presets file `presets.txt`:
 ```
-./cryVideoComparer --from 00:45.5 --to 01:00 -p presets.txt myClip.mp4
+./CryEncoderComparer --from 00:45.5 --to 01:00 -p presets.txt myClip.mp4
 ```
 
 Example using shorthand options. Timestamps `00:05` and `00:15`. Using 16 threads for VMAF calculation:
 ```
-./cryVideoComparer -p presets.txt -f 5 -t 15 myClip.mp4 --threads 16
+./CryEncoderComparer -p presets.txt -f 5 -t 15 myClip.mp4 --threads 16
 ```
 
 ## Presets File

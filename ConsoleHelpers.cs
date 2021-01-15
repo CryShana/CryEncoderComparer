@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 
-namespace cryVideoComparer
+namespace CryEncoderComparer
 {
     public static class ConsoleHelpers
     {
@@ -29,7 +29,7 @@ namespace cryVideoComparer
 
         public static void ShowHelp()
         {
-            var exe = "cryVideoComparer";
+            var exe = "CryEncoderComparer";
 
             Console.WriteLine(
                 $"Tool for comparing different ffmpeg video encoders based on a given reference clip.\n\n" +

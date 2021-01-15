@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using static System.Console;
 
-namespace cryVideoComparer
+namespace CryEncoderComparer
 {
     class Program
     {
@@ -201,6 +201,8 @@ namespace cryVideoComparer
                     ConsoleHelpers.WriteLine($"\nERROR! Failed to delete some temporary files", ConsoleColor.Red);
                 }
             }
+
+            WriteLine();
         }
 
         static async Task<(int width, int height, int bitDepth, double fps, string chroma, string pixelFormat, double duration)> ReadVideoData(string input)

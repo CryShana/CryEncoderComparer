@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace cryVideoComparer
+namespace CryEncoderComparer
 {
     public static class FFmpegHelpers
     {
