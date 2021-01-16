@@ -123,52 +123,70 @@ namespace CryEncoderComparer
                 // for each preset do the following:
                 foreach (var p in presets)
                 {
-                    EnsureValidPreset(p, out string format);
-
-                    // encode video normally
-                    ConsoleHelpers.WriteMultipart(("\nEncoding using '", ConsoleColor.Gray), (p, ConsoleColor.Magenta), ("'", ConsoleColor.Gray));
-
-                    ffmpeg = FFmpegHelpers.Run($"-f rawvideo -framerate {fps} -pixel_format {pix_fmt} -video_size {w}x{h} -i \"{path_ref}\" {p} -an {path_enc} -y", null, onProgressChanged);
-                    await ffmpeg.WaitForExitAsync(csc.Token);
-                    if (csc.IsCancellationRequested) throw new TaskCanceledException();
-                    if (ffmpeg.ExitCode != 0) throw new Exception("FFmpeg failed to encode video with preset: " + p);
-                    WriteLine();
-
-                    // now convert encoded video to raw .yuv
-                    Write("  - Converting encoded clip to raw YUV format");
-
-                    ffmpeg = FFmpegHelpers.Run($"-f {format} -i \"{path_enc}\" -f rawvideo {path_dist} -y", null, onProgressChanged);
-                    await ffmpeg.WaitForExitAsync(csc.Token);
-                    if (csc.IsCancellationRequested) throw new TaskCanceledException();
-                    if (ffmpeg.ExitCode != 0) throw new Exception("FFmpeg failed to convert encoded video to raw YUV format!");
-                    WriteLine();
-
-
-                    Write("  - Calculating VMAF score ");
-                    // run VMAF and compare original and distorted YUV videos
-                    var pinfo = new ProcessStartInfo
+                    var sw = Stopwatch.StartNew();
+                    try
                     {
-                        FileName = vmafpath,
-                        UseShellExecute = false,
-                        RedirectStandardError = true,
-                        RedirectStandardOutput = true,
-                        CreateNoWindow = false,
-                        Arguments = $"-r {path_ref} -d {path_dist} -w {w} -h {h} -b {bit} -p {chroma} --threads {threads} --json -o {path_vmaf}"
-                    };
+                        EnsureValidPreset(p, out string format);
 
-                    vmaf = new Process { StartInfo = pinfo };
-                    vmaf.Start();
-                    //handleVMAFOutput(vmaf);
-                    await vmaf.WaitForExitAsync(csc.Token);
-                    if (csc.IsCancellationRequested) throw new TaskCanceledException();
-                    if (vmaf.ExitCode != 0) throw new Exception("VMAF failed to compare videos");
+                        // encode video normally
+                        ConsoleHelpers.WriteMultipart(("\nEncoding using '", ConsoleColor.Gray), (p, ConsoleColor.Magenta), ("'", ConsoleColor.Gray));
 
-                    // parse VMAF score
-                    var (min, max, mean, hmean) = GetVMAFScore(path_vmaf);
-                    WriteLine();
-                    ConsoleHelpers.WriteLine($"     - VMAF range: {min} - {max}", ConsoleColor.DarkGray);
-                    ConsoleHelpers.WriteLine($"     - VMAF mean: {mean}", ConsoleColor.Gray);
-                    ConsoleHelpers.WriteLine($"     - VMAF harmonized mean: {hmean}", ConsoleColor.Green);
+                        ffmpeg = FFmpegHelpers.Run($"-f rawvideo -framerate {fps} -pixel_format {pix_fmt} -video_size {w}x{h} -i \"{path_ref}\" {p} -an {path_enc} -y", null, onProgressChanged);
+                        await ffmpeg.WaitForExitAsync(csc.Token);
+                        if (csc.IsCancellationRequested) throw new TaskCanceledException();
+                        if (ffmpeg.ExitCode != 0) throw new ApplicationException("FFmpeg failed to encode video with preset: " + p);
+                        WriteLine();
+
+                        // now convert encoded video to raw .yuv
+                        Write("  - Converting encoded clip to raw YUV format");
+
+                        ffmpeg = FFmpegHelpers.Run($"-f {format} -i \"{path_enc}\" -f rawvideo {path_dist} -y", null, onProgressChanged);
+                        await ffmpeg.WaitForExitAsync(csc.Token);
+                        if (csc.IsCancellationRequested) throw new TaskCanceledException();
+                        if (ffmpeg.ExitCode != 0) throw new ApplicationException("FFmpeg failed to convert encoded video to raw YUV format!");
+                        WriteLine();
+
+
+                        Write("  - Calculating VMAF score ");
+                        // run VMAF and compare original and distorted YUV videos
+                        var pinfo = new ProcessStartInfo
+                        {
+                            FileName = vmafpath,
+                            UseShellExecute = false,
+                            RedirectStandardError = true,
+                            RedirectStandardOutput = true,
+                            CreateNoWindow = false,
+                            Arguments = $"-r {path_ref} -d {path_dist} -w {w} -h {h} -b {bit} -p {chroma} --threads {threads} --json -o {path_vmaf}"
+                        };
+
+                        vmaf = new Process { StartInfo = pinfo };
+                        vmaf.Start();
+                        //handleVMAFOutput(vmaf);
+                        await vmaf.WaitForExitAsync(csc.Token);
+                        if (csc.IsCancellationRequested) throw new TaskCanceledException();
+                        if (vmaf.ExitCode != 0) throw new ApplicationException("VMAF failed to compare videos");
+
+                        // parse VMAF score
+                        var (min, max, mean, hmean) = GetVMAFScore(path_vmaf);
+                        WriteLine();
+                        ConsoleHelpers.WriteLine($"     - VMAF range: {min} - {max}", ConsoleColor.DarkGray);
+                        ConsoleHelpers.WriteLine($"     - VMAF mean: {mean}", ConsoleColor.Gray);
+                        ConsoleHelpers.WriteLine($"     - VMAF harmonized mean: {hmean}", ConsoleColor.Green);
+                    }
+                    catch (TaskCanceledException)
+                    {
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        ConsoleHelpers.WriteLine($"\nERROR! {ex.Message}", ConsoleColor.Red);
+                        continue;
+                    }
+                    finally
+                    {
+                        sw.Stop();
+                        ConsoleHelpers.WriteLine($"  - Elapsed: {sw.Elapsed.TotalSeconds} sec", ConsoleColor.DarkGray);
+                    }
                 }
 
             }
@@ -341,7 +359,7 @@ namespace CryEncoderComparer
         {
             // TODO: for some reason can not read standard output unless NEW LINE is received (VMAF never sends a new line!)
             throw new NotImplementedException();
-
+/*
             var readChars = new List<char>();
 
             var reader = p.StandardError;
@@ -351,7 +369,7 @@ namespace CryEncoderComparer
                 var r = reader.Read();
                 if (r == -1) break;
                 readChars.Add((char)r);
-            }
+            }*/
         }
 
         static void WriteCurrentProgress()
@@ -365,6 +383,7 @@ namespace CryEncoderComparer
             // this is the last key of progress update, update console output here
             var progress = (progress_lastTime / current_duration) * 100;
             if (progress > 99) progress = 100;
+            if (progress < 0) progress = 0;
 
             string msg = $" [{progress:0.00}%] (Speed: {progress_speed})                ";
             if (cursorAvailable)
