@@ -131,11 +131,14 @@ namespace CryEncoderComparer
                         // encode video normally
                         ConsoleHelpers.WriteMultipart(("\nEncoding using '", ConsoleColor.Gray), (p, ConsoleColor.Magenta), ("'", ConsoleColor.Gray));
 
+                        var sw2 = Stopwatch.StartNew();
                         ffmpeg = FFmpegHelpers.Run($"-f rawvideo -framerate {fps} -pixel_format {pix_fmt} -video_size {w}x{h} -i \"{path_ref}\" {p} -an {path_enc} -y", null, onProgressChanged);
                         await ffmpeg.WaitForExitAsync(csc.Token);
                         if (csc.IsCancellationRequested) throw new TaskCanceledException();
                         if (ffmpeg.ExitCode != 0) throw new ApplicationException("FFmpeg failed to encode video with preset: " + p);
+                        sw2.Stop();
                         WriteLine();
+                        WriteLine($"  - Encoding time: {sw2.Elapsed.TotalSeconds} sec");                   
 
                         // now convert encoded video to raw .yuv
                         Write("  - Converting encoded clip to raw YUV format");
@@ -175,7 +178,7 @@ namespace CryEncoderComparer
                     }
                     catch (TaskCanceledException)
                     {
-                        break;
+                        throw;
                     }
                     catch (Exception ex)
                     {
