@@ -145,7 +145,7 @@ namespace CryEncoderComparer
 
                         var size = new FileInfo(path_enc).Length / 1_000_000.0;    
                         ConsoleHelpers.WriteLineMultipart(
-                            ("  - Encoding size: ", ForegroundColor), 
+                            ("  - Encoded size: ", ForegroundColor), 
                             ($"{size:0.000} MB", ConsoleColor.DarkGray));             
 
                         // now convert encoded video to raw .yuv
