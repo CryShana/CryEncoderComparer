@@ -138,7 +138,10 @@ namespace CryEncoderComparer
                         if (ffmpeg.ExitCode != 0) throw new ApplicationException("FFmpeg failed to encode video with preset: " + p);
                         sw2.Stop();
                         WriteLine();
-                        WriteLine($"  - Encoding time: {sw2.Elapsed.TotalSeconds} sec");                   
+                        WriteLine($"  - Encoding time: {sw2.Elapsed.TotalSeconds} sec"); 
+
+                        var size = new FileInfo(path_enc).Length / 1_000_000.0;  
+                        WriteLine($"  - Encoded size: {size:0.000} MB");                   
 
                         // now convert encoded video to raw .yuv
                         Write("  - Converting encoded clip to raw YUV format");
