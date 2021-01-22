@@ -111,7 +111,7 @@ namespace CryEncoderComparer
                 if (!File.Exists(vmafpath)) throw new FileNotFoundException("VMAF executable not found!");
 
                 // convert original to raw .yuv
-                ConsoleHelpers.WriteMultipart(("\nConverting to raw YUV format (Duration: ", ConsoleColor.Gray), ($"{current_duration}sec", ConsoleColor.Cyan), (")", ConsoleColor.Gray));
+                ConsoleHelpers.WriteMultipart(("\nConverting to raw YUV format (Duration: ", ForegroundColor), ($"{current_duration}sec", ConsoleColor.Cyan), (")", ForegroundColor));
 
                 ffmpeg = FFmpegHelpers.Run($"-i \"{input}\" -ss {fromSec} {(toSec <= 0 ? "" : $"-to {toSec}")} -an -f rawvideo {path_ref} -y", null, onProgressChanged);
                 ffmpeg.StartInfo.RedirectStandardOutput = true;
@@ -129,7 +129,7 @@ namespace CryEncoderComparer
                         EnsureValidPreset(p, out string format);
 
                         // encode video normally
-                        ConsoleHelpers.WriteMultipart(("\nEncoding using '", ConsoleColor.Gray), (p, ConsoleColor.Magenta), ("'", ConsoleColor.Gray));
+                        ConsoleHelpers.WriteMultipart(("\nEncoding using '", ForegroundColor), (p, ConsoleColor.Magenta), ("'", ForegroundColor));
 
                         var sw2 = Stopwatch.StartNew();
                         ffmpeg = FFmpegHelpers.Run($"-f rawvideo -framerate {fps} -pixel_format {pix_fmt} -video_size {w}x{h} -i \"{path_ref}\" {p} -an {path_enc} -y", null, onProgressChanged);
